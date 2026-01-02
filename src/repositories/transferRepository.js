@@ -1,26 +1,11 @@
-let nextId = 1;
-let transfers = [];
-
 export const transferRepository = {
-  create({ valueCents, payerId, payeeId }) {
-    const transfer = {
-      id: nextId++,
-      valueCents,
-      payerId,
-      payeeId,
-      createdAt: new Date().toISOString(),
-    };
-
-    transfers.push(transfer);
-    return transfer;
-  },
-
-  list() {
-    return transfers;
-  },
-
-  reset() {
-    nextId = 1;
-    transfers = [];
+  async create(client, { valueCents, payerId, payeeId }) {
+    const { rows } = await client.query(
+      `INSERT INTO transfers (value_cents, payer_id, payee_id)
+       VALUES ($1, $2, $3)
+       RETURNING id, value_cents, payer_id, payee_id, created_at`,
+      [Number(valueCents), Number(payerId), Number(payeeId)]
+    );
+    return rows[0];
   },
 };

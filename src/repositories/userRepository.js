@@ -1,33 +1,23 @@
-const seedUsers = () =>
-  new Map([
-    [1, { id: 1, type: "COMMON", balanceCents: 10_000 }],
-    [2, { id: 2, type: "MERCHANT", balanceCents: 50_000 }],
-  ]);
-
-let users = seedUsers();
-
 export const userRepository = {
-  findById(id) {
-    return users.get(Number(id)) ?? null;
+  async findByIdForUpdate(client, id) {
+    const { rows } = await client.query(
+      `SELECT id, type, balance_cents
+       FROM users
+       WHERE id = $1
+       FOR UPDATE`,
+      [Number(id)]
+    );
+    return rows[0] ?? null;
   },
 
-  addBalance(id, deltaCents) {
-    const user = users.get(Number(id));
-    if (!user) return null;
-
-    user.balanceCents += Number(deltaCents);
-    return user;
-  },
-
-  setBalance(id, balanceCents) {
-    const user = users.get(Number(id));
-    if (!user) return null;
-
-    user.balanceCents = Number(balanceCents);
-    return user;
-  },
-
-  reset() {
-    users = seedUsers();
+  async addBalance(client, id, deltaCents) {
+    const { rows } = await client.query(
+      `UPDATE users
+       SET balance_cents = balance_cents + $1
+       WHERE id = $2
+       RETURNING id, type, balance_cents`,
+      [Number(deltaCents), Number(id)]
+    );
+    return rows[0] ?? null;
   },
 };
